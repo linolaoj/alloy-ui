@@ -158,7 +158,18 @@ A.mix(defaults, {
         },
 
         date: function(val) {
-            var date = new Date(val);
+            var date = new Date(val),
+                dateString,
+                match;
+
+            if (val && val.match && date === 'Invalid Date') {
+                match = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+                if (match && match.length === 4) {
+                    dateString = match[3].concat('/', match[2], '/', match[1]);
+                    date = new Date(dateString);
+                }
+            }
 
             return (isDate(date) && (date !== 'Invalid Date') && !isNaN(date));
         },

@@ -4,6 +4,11 @@
 
 ## @VERSION@
 
+* [AUI-1928](https://issues.liferay.com/browse/AUI-1928) Fields should be moved between others field in a same col
+* [AUI-1918](https://issues.liferay.com/browse/AUI-1918) Change functionality of remove rows
+* [AUI-1922](https://issues.liferay.com/browse/AUI-1922) Fixing localization issues on Form Builder
+* [AUI-1885](https://issues.liferay.com/browse/AUI-1885) Allows adding multiple fields on the same column
+* [AUI-1887](https://issues.liferay.com/browse/AUI-1887) Form builder should have pages, not page breaks
 * [AUI-1858](https://issues.liferay.com/browse/AUI-1858) FormBuilder should be able to receive layout as a configuration object
 * [AUI-1830](https://issues.liferay.com/browse/AUI-1830) Button to move field should be inside the field's toolbar
 * [AUI-1755](https://issues.liferay.com/browse/AUI-1755) Button for adding page breaks should be on the left of the button to add rows

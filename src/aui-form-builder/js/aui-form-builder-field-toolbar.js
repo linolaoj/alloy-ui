@@ -28,7 +28,7 @@ A.FormBuilderFieldToolbar = A.Base.create('form-builder-field-toolbar', A.Base, 
         '<button type="button" class="btn btn-default ' + CSS_TOOLBAR_TOGGLE + '" tabindex="9">' +
         '<span class="glyphicon glyphicon-cog"></span></button>' +
         '<div class="btn-group ' + CSS_TOOLBAR_ITEMS + '"></div></div>',
-    TPL_TOOLBAR_ITEM: '<button class="btn btn-default ' + CSS_TOOLBAR_ITEM + ' {buttonClass}" tabindex="9">' +
+    TPL_TOOLBAR_ITEM: '<button type="button" class="btn btn-default ' + CSS_TOOLBAR_ITEM + ' {buttonClass}" tabindex="9">' +
         '<span class="{iconClass}"></span></button>',
 
     /**
@@ -54,7 +54,8 @@ A.FormBuilderFieldToolbar = A.Base.create('form-builder-field-toolbar', A.Base, 
             this._eventHandles.push(
                 fieldsContainer.delegate('click', this._onFieldClick, '.' + CSS_FIELD_CONTENT, this)
             );
-        } else {
+        }
+        else {
             this._eventHandles.push(
                 fieldsContainer.delegate('mouseenter', this._onFieldMouseEnter, '.' + CSS_FIELD_CONTENT_TOOLBAR, this),
                 fieldsContainer.delegate('mouseleave', this._onFieldMouseLeave, '.' + CSS_FIELD_CONTENT_TOOLBAR, this)
@@ -86,7 +87,7 @@ A.FormBuilderFieldToolbar = A.Base.create('form-builder-field-toolbar', A.Base, 
     },
 
     /**
-     * Closes the toolbar
+     * Closes the toolbar.
      *
      * @method close
      */
@@ -95,10 +96,11 @@ A.FormBuilderFieldToolbar = A.Base.create('form-builder-field-toolbar', A.Base, 
     },
 
     /**
-     * Finds one toolbar's item using the selector
+     * Finds one toolbar's item using the selector.
      *
      * @method getItem
      * @param {String} selector
+     * @return {Node}
      */
     getItem: function(selector) {
         return this._toolbar.one(selector);

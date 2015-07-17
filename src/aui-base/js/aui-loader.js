@@ -596,13 +596,13 @@ Y.mix(YUI.Env[Y.version].modules, {
         "requires": [
             "aui-modal",
             "aui-layout",
+            "aui-form-builder-field-list",
             "aui-form-builder-field-toolbar",
             "aui-form-builder-field-type",
             "aui-form-builder-field-types",
             "aui-form-builder-layout-builder",
-            "aui-form-builder-page-break-row",
+            "aui-form-builder-pages",
             "aui-form-builder-settings-modal",
-            "aui-menu",
             "event-focus",
             "event-tap"
         ],
@@ -627,6 +627,14 @@ Y.mix(YUI.Env[Y.version].modules, {
             "aui-form-builder-field-base",
             "aui-form-field-choice"
         ]
+    },
+    "aui-form-builder-field-list": {
+        "requires": [
+            "aui-form-builder-field-type",
+            "aui-form-builder-field-types",
+            "aui-form-builder-layout-builder"
+        ],
+        "skinnable": true
     },
     "aui-form-builder-field-sentence": {
         "requires": [
@@ -670,18 +678,16 @@ Y.mix(YUI.Env[Y.version].modules, {
         "requires": [
             "aui-classnamemanager",
             "aui-layout-builder",
+            "aui-modal",
             "base",
             "node-base"
         ],
         "skinnable": true
     },
-    "aui-form-builder-page-break-row": {
+    "aui-form-builder-pages": {
         "requires": [
-            "aui-classnamemanager",
-            "aui-layout-col",
-            "aui-layout-row",
+            "aui-pagination",
             "base",
-            "event-focus",
             "event-valuechange",
             "node-base"
         ],
@@ -920,7 +926,8 @@ Y.mix(YUI.Env[Y.version].modules, {
         "requires": [
             "aui-node-base",
             "base-build"
-        ]
+        ],
+        "skinnable": true
     },
     "aui-layout-builder-resize-col": {
         "requires": [
@@ -1654,4 +1661,4 @@ Y.mix(YUI.Env[Y.version].modules, {
         ]
     }
 });
-YUI.Env[Y.version].md5 = '324dceb3ad7144b9871fb77a4f9e5a16';
+YUI.Env[Y.version].md5 = '0d06435a189f8f16975ebe6e177f7cc0';

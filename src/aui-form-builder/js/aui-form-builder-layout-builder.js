@@ -5,8 +5,7 @@
  * @submodule aui-form-builder-layout-builder
  */
 
-var CSS_ADD_PAGE_BREAK = A.getClassName('form', 'builder', 'add', 'page', 'break'),
-    CSS_CHOOSE_COL_MOVE = A.getClassName('form', 'builder', 'choose', 'col', 'move'),
+var CSS_CHOOSE_COL_MOVE = A.getClassName('form', 'builder', 'choose', 'col', 'move'),
     CSS_CHOOSE_COL_MOVE_TARGET = A.getClassName('form', 'builder', 'choose', 'col', 'move', 'target'),
     CSS_FIELD = A.getClassName('form', 'builder', 'field'),
     CSS_FIELD_MOVE_BUTTON = A.getClassName('form', 'builder', 'field', 'move', 'button'),
@@ -15,10 +14,9 @@ var CSS_ADD_PAGE_BREAK = A.getClassName('form', 'builder', 'add', 'page', 'break
     CSS_FIELD_MOVING = A.getClassName('form', 'builder', 'field', 'moving'),
     CSS_LAYOUT = A.getClassName('form', 'builder', 'layout'),
     CSS_LAYOUT_BUILDER_MOVE_CANCEL = A.getClassName('layout', 'builder', 'move', 'cancel'),
-    CSS_LAYOUT_MODE = A.getClassName('form', 'builder', 'layout', 'mode'),
-
-    SELECTOR_LAYOUT_BUILDER_ADD_ROW = '.layout-builder-add-row',
-    SELECTOR_LAYOUT_BUILDER_ADD_ROW_CHOOSE_ROW = '.layout-builder-add-row-choose-row';
+    CSS_MOVE_COL_TARGET = A.getClassName('layout', 'builder', 'move', 'col', 'target'),
+    CSS_MOVE_TARGET = A.getClassName('layout', 'builder', 'move', 'target'),
+    CSS_REMOVE_ROW_MODAL = A.getClassName('form', 'builder', 'remove', 'row', 'modal');
 
 /**
  * `A.FormBuilder` extension, which handles the `A.LayoutBuilder` inside it.
@@ -31,7 +29,6 @@ var CSS_ADD_PAGE_BREAK = A.getClassName('form', 'builder', 'add', 'page', 'break
 A.FormBuilderLayoutBuilder = function() {};
 
 A.FormBuilderLayoutBuilder.prototype = {
-    TITLE_LAYOUT: 'Edit Layout',
 
     /**
      * Construction logic executed during the `A.FormBuilderLayoutBuilder`
@@ -41,11 +38,11 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     initializer: function() {
+        this._initRemoveConfirmationModal();
+
         this.after({
-            create: this._afterFieldCreate,
-            layoutChange: this._afterLayoutBuilderLayoutChange,
-            modeChange: this._afterLayoutBuilderModeChange,
-            render: this._afterLayoutBuilderRender
+            render: this._afterLayoutBuilderRender,
+            'layout-row:colsChange': this._afterLayoutBuilderColsChange
         });
     },
 
@@ -60,6 +57,8 @@ A.FormBuilderLayoutBuilder.prototype = {
         if (this._layoutBuilder) {
             this._layoutBuilder.destroy();
         }
+
+        this._removeConfirmationModal.destroy();
     },
 
     /**
@@ -75,6 +74,8 @@ A.FormBuilderLayoutBuilder.prototype = {
 
         targetNodes.setData('node-col', colNode);
         targetNodes.setData('node-row', rowNode);
+
+        this._renderEmptyColumns();
     },
 
     /**
@@ -82,19 +83,11 @@ A.FormBuilderLayoutBuilder.prototype = {
      *
      * @method _addColMoveTarget
      * @param {A.LayoutCol} col
-     * @param {Number} index
      * @protected
      */
     _addColMoveTarget: function(col) {
-        var cantReceiveMoveTarget,
-            colNode = col.get('node'),
+        var colNode = col.get('node'),
             targetNodes;
-
-        cantReceiveMoveTarget = !col.get('movableContent') && !colNode.one('.form-builder-empty-col');
-
-        if (cantReceiveMoveTarget) {
-            return;
-        }
 
         colNode.addClass(CSS_CHOOSE_COL_MOVE_TARGET);
 
@@ -103,48 +96,18 @@ A.FormBuilderLayoutBuilder.prototype = {
     },
 
     /**
-     * Executed after the `layout:create` is fired.
+     * Executed after the `layout:rowsChange` is fired.
      *
-     * @method _afterFieldCreate
+     * @method _afterLayoutBuilderColsChange
+     * @param {EventFacade} event
      * @protected
      */
-    _afterFieldCreate: function() {
-        this._checkLastEmptyRow();
-    },
+    _afterLayoutBuilderColsChange: function(event) {
+        var lastRow = this._getLastRow();
 
-    /**
-     * Fired after the `layout:isColumnMode` attribute changes.
-     *
-     * @method _afterLayoutBuilderIsColumnModeChange
-     * @protected
-     */
-    _afterLayoutBuilderIsColumnModeChange: function() {
-        this._setPositionForPageBreakButton();
-    },
-
-    /**
-     * Fired after the `layout` attribute is set.
-     *
-     * @method _afterLayoutBuilderLayoutChange
-     * @protected
-     */
-    _afterLayoutBuilderLayoutChange: function() {
-        if (this._layoutBuilder) {
-            this._layoutBuilder.set('layout', this.get('layout'));
+        if (lastRow === event.target) {
+            this._checkLastRow();
         }
-    },
-
-    /**
-     * Fired after the `mode` attribute is set.
-     *
-     * @method _afterLayoutBuilderModeChange
-     * @protected
-     */
-    _afterLayoutBuilderModeChange: function() {
-        var layout = this.get('layout');
-
-        this._uiSetLayoutBuilderMode(this.get('mode'));
-        layout.normalizeColsHeight(layout.get('node').all('.row'));
     },
 
     /**
@@ -160,19 +123,16 @@ A.FormBuilderLayoutBuilder.prototype = {
             addColMoveButton: A.bind(this._addColMoveButton, this),
             addColMoveTarget: A.bind(this._addColMoveTarget, this),
             clickColMoveTarget: A.bind(this._clickColMoveTarget, this),
+            clickRemoveRow: A.bind(this._clickRemoveRow, this),
             container: this.get('contentBox').one('.' + CSS_LAYOUT),
-            layout: this.get('layout'),
+            layout: this.getActiveLayout(),
             removeColMoveButtons: A.bind(this._removeColMoveButtons, this),
             removeColMoveTargets: A.bind(this._removeColMoveTargets, this)
         });
 
         originalChooseColMoveTargetFn = this._layoutBuilder.get('chooseColMoveTarget');
-        this._layoutBuilder.set('chooseColMoveTarget', A.bind(this._chooseColMoveTarget, this, originalChooseColMoveTargetFn));
-
-        this._uiSetLayoutBuilderMode(this.get('mode'));
-
-        this._layoutBuilder.get('layout').after('isColumnModeChange', A.bind(this._afterLayoutBuilderIsColumnModeChange, this));
-        this._setPositionForPageBreakButton();
+        this._layoutBuilder.set('chooseColMoveTarget', A.bind(this._chooseColMoveTarget, this,
+            originalChooseColMoveTargetFn));
 
         this._eventHandles.push(
             this._fieldToolbar.on('onToolbarFieldMouseEnter', A.bind(this._onFormBuilderToolbarFieldMouseEnter, this))
@@ -180,28 +140,25 @@ A.FormBuilderLayoutBuilder.prototype = {
 
         this._removeLayoutCutColButtons();
 
-        this._removeAddRowButton();
-        this._checkLastEmptyRow();
+        this._checkLastRow();
     },
 
     /**
-     * Checks if the last row is empty.
+     * Checks if the last row has more than one col, if yes a new row is
+     * created and set as the last position.
      *
-     * @method _checkLastEmptyRow
+     * @method _checkLastRow
      * @protected
      */
-    _checkLastEmptyRow: function() {
-        var cols;
+    _checkLastRow: function() {
+        var lastRow = this._getLastRow();
 
-        this._lastRow = this._getLastRow();
-
-        cols = this._lastRow.get('cols');
-
-        for (var i = 0; i < cols.length; i++) {
-            if (!cols[i].get('node').one('.form-builder-empty-col')) {
-                this._createLastRow();
-                break;
-            }
+        if (lastRow.get('cols').length > 1) {
+            lastRow.set('removable', true);
+            this._createLastRow();
+        }
+        else {
+            lastRow.set('removable', false);
         }
     },
 
@@ -215,14 +172,14 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     _chooseColMoveTarget: function(originalFn, cutButton, col) {
-        var colNode = col.get('node'),
-            fieldNode = cutButton.ancestor('.' + CSS_FIELD),
+        var fieldNode = cutButton.ancestor('.' + CSS_FIELD),
+            layout = this.getActiveLayout(),
             targetNode;
 
         this._fieldBeingMoved = fieldNode.getData('field-instance');
+        this._fieldListBeingMoved = col.get('value');
         this._fieldBeingMovedCol = col;
 
-        colNode.addClass(CSS_CHOOSE_COL_MOVE_TARGET);
         fieldNode.addClass(CSS_FIELD_MOVING);
 
         targetNode = fieldNode.previous('.' + CSS_FIELD_MOVE_TARGET);
@@ -236,6 +193,14 @@ A.FormBuilderLayoutBuilder.prototype = {
         }
 
         originalFn(cutButton, col);
+        this._addColMoveTarget(col);
+
+        layout.normalizeColsHeight(layout.get('node').all('.row'));
+
+        this._cancelMoveFieldHandles = [
+            A.one(A.config.doc).on('click', A.bind(this._onClickOutsideMoveTarget, this)),
+            A.one(A.config.doc).on('key', A.bind(this._onEscKeyPressMoveTarget, this), 'down:27')
+        ];
     },
 
     /**
@@ -246,7 +211,9 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     _clickColMoveTarget: function(moveTarget) {
-        var parentFieldNode = this._fieldBeingMoved.get('content').ancestor('.' + CSS_FIELD),
+        var layout = this.getActiveLayout(),
+            parentFieldNode = this._fieldBeingMoved.get('content').ancestor('.' + CSS_FIELD),
+            row,
             targetNestedParent = moveTarget.getData('nested-field-parent'),
             toolbarMoveIconCancelMode = this._fieldToolbar.getItem('.' + CSS_LAYOUT_BUILDER_MOVE_CANCEL);
 
@@ -256,11 +223,10 @@ A.FormBuilderLayoutBuilder.prototype = {
 
         if (parentFieldNode) {
             parentFieldNode.getData('field-instance').removeNestedField(this._fieldBeingMoved);
-
-            this.get('layout').normalizeColsHeight(new A.NodeList(this.getFieldRow(parentFieldNode.getData('field-instance'))));
         }
         else {
-            this._fieldBeingMovedCol.set('value', null);
+            row = this.getFieldRow(this._fieldBeingMoved);
+            this._fieldListBeingMoved.removeField(this._fieldBeingMoved);
         }
 
         if (targetNestedParent) {
@@ -271,41 +237,44 @@ A.FormBuilderLayoutBuilder.prototype = {
             );
         }
         else {
-            moveTarget.getData('col').set('value', this._fieldBeingMoved);
+            moveTarget.getData('col').get('value').addField(
+                this._fieldBeingMoved,
+                moveTarget.getData('field-list-index')
+            );
         }
 
         this._layoutBuilder.cancelMove();
         this._removeLayoutCutColButtons();
+
+        layout.normalizeColsHeight(new A.NodeList(this.getFieldRow(this._fieldBeingMoved)));
+
+        this._detachCancelMoveFieldEvents();
     },
 
     /**
-     * Put add page break button together with add row button.
+     * Overrides default `clickRemoveRow` attribute. Check if the parameter `row` has fields.
      *
-     * @method _collapseAddPageBreakButton
-     * @param {Node} addPageBreakButton
-     * @param {Node} addRowContainer
+     * @method _clickRemoveRow
+     * @param {A.LayoutRow} row
      * @protected
      */
-    _collapseAddPageBreakButton: function(addPageBreakButton, addRowContainer) {
-        addRowContainer.append(addPageBreakButton);
-    },
+    _clickRemoveRow: function(row) {
+        var cols = row.get('cols'),
+            currentList,
+            index;
 
-    /**
-     * Creates a row with the same layout of the last row.
-     *
-     * @method _copyLastRow
-     * @protected
-     * @return {A.LayoutRow}
-     */
-    _copyLastRow: function() {
-        var cols = this._lastRow.get('cols'),
-            newCols = [];
+        for (index = 0; index < cols.length; index++) {
+            currentList = cols[index].get('value');
 
-        for (var i = 0; i < cols.length; i++) {
-            newCols.push(new A.LayoutCol({ size: cols[i].get('size') }));
+            if (currentList && currentList.get('fields').length) {
+                this._removeConfirmationModal.show();
+                this._removingRow = row;
+
+                return false;
+            }
         }
 
-        return new A.LayoutRow({ cols: newCols });
+        return true;
     },
 
     /**
@@ -315,63 +284,35 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     _createLastRow: function() {
-        var lastRow = this._copyLastRow(),
-            layout = this.get('layout'),
+        var lastRow = new A.LayoutRow(),
+            layout = this.getActiveLayout(),
             rows = layout.get('rows');
 
+        lastRow.set('removable', false);
+
         layout.addRow(rows.length, lastRow);
-
-        this._lastRow = this._getLastRow();
     },
 
     /**
-     * Makes the form builder enter layout mode, where the layout can be edited.
+     * Detaches events related to the cancel move field funcionality.
      *
-     * @method _enterLayoutMode
+     * @method _detachCancelMoveFieldEvents
      * @protected
      */
-    _enterLayoutMode: function() {
-        if (this._layoutBuilder) {
-            this._layoutBuilder.setAttrs({
-                enableMoveCols: false,
-                enableMoveRows: true,
-                enableRemoveCols: true,
-                enableRemoveRows: true
-            });
-        }
-
-        this._updateHeaderTitle(this.TITLE_LAYOUT);
+    _detachCancelMoveFieldEvents: function() {
+        new A.EventHandle(this._cancelMoveFieldHandles).detach();
     },
 
     /**
-     * Makes the form builder exit layout mode.
+     * Removes a row even with field.
      *
-     * @method _exitLayoutMode
+     * @method _forceRemoveRow
      * @protected
      */
-    _exitLayoutMode: function() {
-        if (this._layoutBuilder) {
-            this._layoutBuilder.setAttrs({
-                enableMoveCols: true,
-                enableMoveRows: false,
-                enableRemoveCols: false,
-                enableRemoveRows: false,
-            });
-        }
+    _forceRemoveRow: function() {
+        this.getActiveLayout().removeRow(this._removingRow);
 
-        this._updateHeaderTitle(this.TITLE_REGULAR);
-    },
-
-    /**
-     * Appends add page break button on content box.
-     *
-     * @method _expandAddPageBreakButton
-     * @param {Node} addPageBreakButton
-     * @param {Node} contentBox
-     * @protected
-     */
-    _expandAddPageBreakButton: function(addPageBreakButton, contentBox) {
-        contentBox.append(addPageBreakButton);
+        this._removeConfirmationModal.hide();
     },
 
     /**
@@ -382,15 +323,90 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @return {A.LayoutRow}
      */
     _getLastRow: function() {
-        var rows = this.get('layout').get('rows');
+        var rows = this.getActiveLayout().get('rows');
 
-        for (var i = rows.length - 1; i >= 0; i--) {
-            if (rows[i].name === 'layout-row') {
-                return rows[i];
+        return rows[rows.length - 1];
+    },
+
+
+    /**
+     * Create a confirmation modal to be used when a remove row button from a row with
+     * fields is clicked.
+     *
+     * @method _initRemoveConfirmationModal
+     * @protected
+     */
+    _initRemoveConfirmationModal: function() {
+        var modal = new A.Modal({
+            bodyContent: this.get('strings').removeRowModal,
+            centered: true,
+            cssClass: CSS_REMOVE_ROW_MODAL,
+            headerContent: this.get('strings').modalHeader,
+            modal: true,
+            resizable: false,
+            visible: false,
+            zIndex: 2
+        }).render();
+
+        modal.addToolbar([
+            {
+                cssClass: 'btn-primary',
+                label: this.get('strings').confirmRemoveRow,
+                on: {
+                    click: A.bind(this._forceRemoveRow, this)
+                },
+                render: true
+            },
+            {
+                label: this.get('strings').cancelRemoveRow,
+                on: {
+                    click: function() {
+                        modal.hide();
+                    }
+                },
+                render: true
             }
+        ]);
+
+        this._removeConfirmationModal = modal;
+    },
+
+    /**
+     * Fires when click event is triggered.
+     *
+     * @method _onClickOutsideMoveTarget
+     * @param {EventFacade} event
+     * @protected
+     */
+    _onClickOutsideMoveTarget: function(event) {
+        var targetNode = event.target,
+        toolbarMoveIconCancelMode = this._fieldToolbar.getItem('.' + CSS_LAYOUT_BUILDER_MOVE_CANCEL);
+
+        if (toolbarMoveIconCancelMode) {
+            toolbarMoveIconCancelMode.removeClass(CSS_LAYOUT_BUILDER_MOVE_CANCEL);
         }
 
-        return new A.LayoutRow();
+        if (!(targetNode.hasClass(CSS_MOVE_TARGET) && targetNode.hasClass(CSS_MOVE_COL_TARGET))) {
+            this._layoutBuilder.cancelMove();
+            this._detachCancelMoveFieldEvents();
+        }
+    },
+
+    /**
+     * Fires when esc key press event is triggered.
+     *
+     * @method _onEscKeyPressMoveTarget
+     * @protected
+     */
+    _onEscKeyPressMoveTarget: function() {
+        var toolbarMoveIconCancelMode = this._fieldToolbar.getItem('.' + CSS_LAYOUT_BUILDER_MOVE_CANCEL);
+
+        if (toolbarMoveIconCancelMode) {
+            toolbarMoveIconCancelMode.removeClass(CSS_LAYOUT_BUILDER_MOVE_CANCEL);
+        }
+
+        this._layoutBuilder.cancelMove();
+        this._detachCancelMoveFieldEvents();
     },
 
     /**
@@ -402,16 +418,6 @@ A.FormBuilderLayoutBuilder.prototype = {
      */
     _onFormBuilderToolbarFieldMouseEnter: function(event) {
         this._toggleMoveColItem(event.colNode);
-    },
-
-    /**
-     * Removes add row button.
-     *
-     * @method _removeAddRowButton
-     * @protected
-     */
-    _removeAddRowButton: function() {
-        A.one(SELECTOR_LAYOUT_BUILDER_ADD_ROW_CHOOSE_ROW + SELECTOR_LAYOUT_BUILDER_ADD_ROW).remove();
     },
 
     /**
@@ -431,11 +437,14 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     _removeColMoveTargets: function() {
-        var contentBox = this.get('contentBox');
+        var contentBox = this.get('contentBox'),
+            layout = this.getActiveLayout();
 
         contentBox.all('.' + CSS_CHOOSE_COL_MOVE_TARGET).removeClass(CSS_CHOOSE_COL_MOVE_TARGET);
         contentBox.all('.' + CSS_FIELD_MOVING).removeClass(CSS_FIELD_MOVING);
         contentBox.all('.' + CSS_FIELD_MOVE_TARGET_INVALID).removeClass(CSS_FIELD_MOVE_TARGET_INVALID);
+
+        layout.normalizeColsHeight(layout.get('node').all('.row'));
     },
 
     /**
@@ -449,29 +458,6 @@ A.FormBuilderLayoutBuilder.prototype = {
     },
 
     /**
-     * Sets the proper position for page break button.
-     *
-     * @method _setPositionForPageBreakButton
-     * @protected
-     */
-    _setPositionForPageBreakButton: function() {
-        var addPageBreakButton,
-            addRowContainer,
-            contentBox = this.get('contentBox'),
-            isColumnMode = this._layoutBuilder.get('layout').get('isColumnMode');
-
-        addPageBreakButton = contentBox.one('.' + CSS_ADD_PAGE_BREAK);
-        addRowContainer = this._layoutBuilder.addRowArea;
-
-        if (isColumnMode) {
-            this._collapseAddPageBreakButton(addPageBreakButton, addRowContainer);
-        }
-        else {
-            this._expandAddPageBreakButton(addPageBreakButton, contentBox);
-        }
-    },
-
-    /**
      * Show or hide move item in toolbar.
      *
      * @method _toggleMoveColItem
@@ -479,34 +465,10 @@ A.FormBuilderLayoutBuilder.prototype = {
      * @protected
      */
     _toggleMoveColItem: function(colNode) {
-        var hasMovableContent = colNode.getData('layout-col').get('movableContent'),
-            moveItem = this._fieldToolbar.getItem('.glyphicon-move').ancestor();
+        var moveItem = this._fieldToolbar.getItem('.glyphicon-move').ancestor();
 
-        if (!hasMovableContent) {
-            moveItem.addClass('hidden');
-        }
-        else {
-            moveItem.setData('layout-row', colNode.ancestor('.row').getData('layout-row'));
-            moveItem.setData('node-col', colNode);
-            moveItem.removeClass('hidden');
-        }
-    },
-
-    /**
-     * Updates the UI according to the value of the `mode` attribute.
-     *
-     * @method _uiSetLayoutBuilderMode
-     * @param  {String} mode
-     * @protected
-     */
-    _uiSetLayoutBuilderMode: function(mode) {
-        if (mode === A.FormBuilder.MODES.LAYOUT) {
-            this._enterLayoutMode();
-            this.get('boundingBox').addClass(CSS_LAYOUT_MODE);
-        }
-        else {
-            this._exitLayoutMode();
-            this.get('boundingBox').removeClass(CSS_LAYOUT_MODE);
-        }
+        moveItem.setData('layout-row', colNode.ancestor('.row').getData('layout-row'));
+        moveItem.setData('node-col', colNode);
+        moveItem.removeClass('hidden');
     }
 };

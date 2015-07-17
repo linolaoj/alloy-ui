@@ -146,6 +146,19 @@ A.LayoutBuilder = A.Base.create('layout-builder', A.Base, [
             valueFn: function() {
                 return new A.Layout();
             }
+        },
+
+        /**
+         * Collection of strings used to label elements of the UI.
+         *
+         * @attribute strings
+         * @type {Object}
+         */
+        strings: {
+            value: {
+                addColumn: 'Add Column'
+            },
+            writeOnce: true
         }
     }
 });

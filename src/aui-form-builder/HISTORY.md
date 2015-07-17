@@ -4,6 +4,15 @@
 
 ## @VERSION@
 
+* [AUI-1928](https://issues.liferay.com/browse/AUI-1928) Fields should be moved between others field in a same col
+* [AUI-1926](https://issues.liferay.com/browse/AUI-1926) Change functionality of move rows
+* [AUI-1918](https://issues.liferay.com/browse/AUI-1918) Change functionality of remove rows
+* [AUI-1917](https://issues.liferay.com/browse/AUI-1917) Add option to create Fields between two others Fields on the same column
+* [AUI-1922](https://issues.liferay.com/browse/AUI-1922) Fixing localization issues on Form Builder
+* [AUI-1921](https://issues.liferay.com/browse/AUI-1921) A row with one col should be automatically added on last position when the last row have at least two cols
+* [AUI-1885](https://issues.liferay.com/browse/AUI-1885) Allows adding multiple fields on the same column
+* [AUI-1887](https://issues.liferay.com/browse/AUI-1887) Form builder should have pages, not page breaks
+* [AUI-1904](https://issues.liferay.com/browse/AUI-1904) Update textual content on Field Text
 * [AUI-1902](https://issues.liferay.com/browse/AUI-1902) Form Builder fields toolbar buttons should not submit the form (reload the page) after clicked
 * [AUI-1899](https://issues.liferay.com/browse/AUI-1899) Improve Form Builder visual interface
 * [AUI-1866](https://issues.liferay.com/browse/AUI-1866) New line should be automatically added when a field is added on the last empty line

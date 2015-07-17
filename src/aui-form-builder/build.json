@@ -19,6 +19,12 @@
             ]
         },
 
+		"aui-form-builder-field-list": {
+			"jsfiles": [
+            	"js/aui-form-builder-field-list.js"
+			]
+		},
+
         "aui-form-builder-field-sentence": {
             "jsfiles": [
                 "js/aui-form-builder-field-sentence.js"
@@ -56,9 +62,9 @@
             ]
         },
 
-        "aui-form-builder-page-break-row": {
+        "aui-form-builder-pages": {
             "jsfiles": [
-                "js/aui-form-builder-page-break-row.js"
+                "js/aui-form-builder-pages.js"
             ]
         },
 
